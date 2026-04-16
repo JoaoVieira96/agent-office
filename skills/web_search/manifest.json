@@ -1,0 +1,30 @@
+{
+  "slug": "web_search",
+  "name": "Pesquisa Web",
+  "description": "Permite ao agente pesquisar informação actualizada na internet.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "max_results": {
+        "type": "integer",
+        "default": 5,
+        "description": "Número máximo de resultados por pesquisa"
+      }
+    }
+  },
+  "tool_schema": {
+    "name": "web_search",
+    "description": "Pesquisa na internet para obter informação actualizada. Usa quando precisas de factos recentes, documentação, ou qualquer informação que possa ter mudado.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "A query de pesquisa"
+        }
+      },
+      "required": ["query"]
+    }
+  }
+}

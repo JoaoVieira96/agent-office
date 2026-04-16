@@ -1,0 +1,30 @@
+{
+  "slug": "minha_skill",
+  "name": "Nome da Skill",
+  "description": "O que esta skill faz, numa frase.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "max_results": {
+        "type": "integer",
+        "default": 5,
+        "description": "Número máximo de resultados"
+      }
+    }
+  },
+  "tool_schema": {
+    "name": "minha_skill",
+    "description": "Descrição que o LLM vai ler para decidir quando usar esta skill.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "description": "O que pesquisar"
+        }
+      },
+      "required": ["query"]
+    }
+  }
+}
