@@ -1,0 +1,82 @@
+{
+  "slug": "git_push",
+  "name": "Git Push",
+  "description": "Escreve ficheiros no repositório, faz commit e push para um novo branch. Usar sempre antes de criar um PR.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "github_token": {
+        "type": "string",
+        "default": "",
+        "description": "Personal Access Token do GitHub com permissões de escrita (repo scope)"
+      },
+      "github_owner": {
+        "type": "string",
+        "default": "",
+        "description": "Owner do repositório no GitHub (ex: 'joaovieira')"
+      },
+      "github_repo": {
+        "type": "string",
+        "default": "",
+        "description": "Nome do repositório no GitHub (ex: 'agent-office')"
+      },
+      "base_branch": {
+        "type": "string",
+        "default": "main",
+        "description": "Branch base a partir do qual criar o novo branch"
+      },
+      "git_user": {
+        "type": "string",
+        "default": "Agent Office",
+        "description": "Nome do autor nos commits"
+      },
+      "git_email": {
+        "type": "string",
+        "default": "agent@office.local",
+        "description": "Email do autor nos commits"
+      },
+      "repo_path": {
+        "type": "string",
+        "default": "/app/repo",
+        "description": "Caminho do repositório dentro do container"
+      }
+    }
+  },
+  "tool_schema": {
+    "name": "git_push",
+    "description": "Escreve ficheiros no repositório, faz commit e push para um novo branch no GitHub. Fornece o conteúdo COMPLETO de cada ficheiro (não diffs). Usar antes de criar um PR com a skill github.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string",
+          "description": "Nome do novo branch (ex: 'feat/add-login', 'fix/auth-bug')"
+        },
+        "commit_message": {
+          "type": "string",
+          "description": "Mensagem de commit seguindo Conventional Commits (ex: 'feat: add login page')"
+        },
+        "files": {
+          "type": "array",
+          "description": "Lista de ficheiros a escrever. Cada ficheiro requer o path relativo à raiz do repo e o conteúdo COMPLETO do ficheiro.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "Caminho relativo à raiz do repo (ex: 'frontend/src/app/login/page.tsx')"
+              },
+              "content": {
+                "type": "string",
+                "description": "Conteúdo completo do ficheiro"
+              }
+            },
+            "required": ["path", "content"]
+          }
+        }
+      },
+      "required": ["branch", "commit_message", "files"]
+    }
+  }
+}
