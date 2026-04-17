@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { Webhook, Plus, Trash2 } from 'lucide-react'
 
 const API = (path: string) => fetch(`/api${path}`)
@@ -23,7 +23,8 @@ const ACTION_TYPES = [
   { value: 'skill',   label: 'Executar Skill' },
 ]
 
-export default function AgentHooksPage({ params }: { params: { id: string } }) {
+export default function AgentHooksPage() {
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [hooks, setHooks]       = useState<any[]>([])
   const [agentName, setAgentName] = useState('')
@@ -34,12 +35,12 @@ export default function AgentHooksPage({ params }: { params: { id: string } }) {
   })
 
   useEffect(() => {
-    API_JSON(`/agents/${params.id}`).then(a => setAgentName(a.name))
+    API_JSON(`/agents/${id}`).then(a => setAgentName(a.name))
     refreshHooks()
-  }, [params.id])
+  }, [id])
 
   const refreshHooks = () =>
-    API_JSON(`/hooks/agent/${params.id}`).then(setHooks)
+    API_JSON(`/hooks/agent/${id}`).then(setHooks)
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
   const setConfig = (k: string, v: string) =>
@@ -48,7 +49,7 @@ export default function AgentHooksPage({ params }: { params: { id: string } }) {
   const create = async () => {
     await API_JSON('/hooks/', {
       method: 'POST',
-      body: JSON.stringify({ ...form, agent_id: params.id }),
+      body: JSON.stringify({ ...form, agent_id: id }),
     })
     setShowForm(false)
     setForm({ name: '', event: 'on_message_sent', action_type: 'webhook', config: { url: '', channel: 'console', skill_slug: '' } })

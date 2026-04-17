@@ -1,18 +1,18 @@
 """
 API — Conversas e Chat
-Inclui endpoint REST e WebSocket para chat em tempo real.
+Endpoints REST para gestão de conversas e mensagens.
+O WebSocket está em app/api/ws.py (registado sem prefixo em /ws/{id}).
 """
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime
 
 from app.db.session import get_db
 from app.db.models import Conversation, Message, MessageRole
-from app.agents.engine import run_agent
-from app.auth.deps import get_current_user, ws_auth
+from app.auth.deps import get_current_user
 
 router = APIRouter()
 
@@ -83,56 +83,3 @@ def get_messages(
     if not conv:
         raise HTTPException(status_code=404, detail="Conversa não encontrada")
     return conv.messages
-
-
-# ---------------------------------------------------------------------------
-# WebSocket — Chat em tempo real
-# O token JWT é passado como query param: /ws/{conv_id}?token=<jwt>
-# ---------------------------------------------------------------------------
-
-@router.websocket("/ws/{conversation_id}")
-async def chat_websocket(
-    websocket: WebSocket,
-    conversation_id: UUID,
-    db: Session = Depends(get_db),
-    _: str = Depends(ws_auth),
-):
-    """
-    WebSocket de chat.
-    Cliente envia: {"message": "..."}
-    Servidor responde: {"type": "thinking"}
-                       {"type": "done",  "content": "resposta completa"}
-                       {"type": "error", "content": "mensagem de erro"}
-    """
-    await websocket.accept()
-
-    conv = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conv:
-        await websocket.send_json({"type": "error", "content": "Conversa não encontrada"})
-        await websocket.close()
-        return
-
-    try:
-        while True:
-            data = await websocket.receive_json()
-            user_message = data.get("message", "").strip()
-
-            if not user_message:
-                continue
-
-            await websocket.send_json({"type": "thinking"})
-
-            try:
-                response = await run_agent(
-                    agent_id=conv.agent_id,
-                    conversation_id=conversation_id,
-                    user_message=user_message,
-                    db=db,
-                )
-                await websocket.send_json({"type": "done", "content": response})
-
-            except Exception as e:
-                await websocket.send_json({"type": "error", "content": str(e)})
-
-    except WebSocketDisconnect:
-        pass

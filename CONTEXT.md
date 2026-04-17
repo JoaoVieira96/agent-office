@@ -218,9 +218,9 @@ O endpoint é `/ws/{conversation_id}` — o Nginx faz upgrade para WebSocket.
 - [x] Sistema de hooks (webhook, skill, notify)
 - [x] Chat em tempo real via WebSocket
 - [x] Docker Compose funcional (testado em Windows)
-- [ ] Autenticação (próximo passo acordado com o utilizador)
-- [ ] Agentes a delegar tarefas a outros agentes
-- [ ] Streaming de respostas do LLM (chunk a chunk)
+- [x] Autenticação JWT (login com credenciais no .env, token 30 dias, guard no frontend, logout na Sidebar)
+- [x] Streaming de respostas do LLM (chunk a chunk, com suporte a tool use)
+- [x] Agent-to-agent delegation (skill delegate_to_agent — worker executa em conversa temporária)
 - [ ] Skill: acesso a ficheiros locais
 - [ ] Skill: integração GitHub
 
@@ -228,9 +228,7 @@ O endpoint é `/ws/{conversation_id}` — o Nginx faz upgrade para WebSocket.
 
 ## Próximo passo acordado
 
-Implementar **autenticação** — login simples para proteger o acesso,
-especialmente para uso remoto via iOS fora da rede local.
-Opção discutida: NextAuth.js no frontend + JWT no backend.
+**Skill: acesso a ficheiros locais** — agentes podem ler/listar ficheiros no servidor.
 
 ---
 
@@ -240,4 +238,6 @@ Opção discutida: NextAuth.js no frontend + JWT no backend.
 2. **Variáveis de ambiente** — estão no `.env` na raiz; nunca hardcoded
 3. **Base de dados** — as tabelas são criadas automaticamente no startup (`create_tables()`); para migrações usar Alembic
 4. **Porta de entrada** — sempre `http://localhost` (porta 80, Nginx); o frontend (3000) e backend (8000) não estão expostos directamente
-5. **WebSocket** — o Nginx faz o upgrade; o path é `/ws/` não `/api/ws/`
+5. **WebSocket** — registado sem prefixo em `backend/app/api/ws.py`; o Nginx faz upgrade no path `/ws/`
+6. **Autenticação** — credenciais em `ADMIN_USERNAME` e `ADMIN_PASSWORD` no `.env`; JWT com 30 dias de validade
+7. **Params dinâmicos Next.js 15** — usar `useParams()` de `next/navigation` em vez de `params` como prop (é uma Promise no Next.js 15)

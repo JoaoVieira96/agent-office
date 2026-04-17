@@ -5,9 +5,9 @@
 
 import { getToken, clearToken } from './auth'
 
-const BASE = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-  : '/api'
+const SERVER_BASE = 'http://backend:8000/api'
+
+const BASE = typeof window === 'undefined' ? SERVER_BASE : '/api'
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken()
@@ -64,6 +64,11 @@ export interface Message {
   created_at: string
 }
 
+export interface SkillConfigSchema {
+  type: string
+  properties?: Record<string, { type: string; default?: any; description?: string }>
+}
+
 export interface Skill {
   id: string
   slug: string
@@ -71,6 +76,7 @@ export interface Skill {
   description: string
   version: string
   is_enabled: boolean
+  config_schema: SkillConfigSchema
 }
 
 // ---------------------------------------------------------------------------
@@ -109,6 +115,7 @@ export const api = {
 
 export type WSMessage =
   | { type: 'thinking' }
+  | { type: 'chunk'; content: string }
   | { type: 'done';  content: string }
   | { type: 'error'; content: string }
 

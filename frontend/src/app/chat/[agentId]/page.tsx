@@ -1,33 +1,37 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useParams } from 'next/navigation'
 import { Send, Plus } from 'lucide-react'
 import { api, createChatSocket, type Message, type Agent, type WSMessage } from '@/lib/api'
 import clsx from 'clsx'
 
-export default function ChatPage({ params }: { params: { agentId: string } }) {
+export default function ChatPage() {
+  const { agentId } = useParams<{ agentId: string }>()
   const [agent, setAgent]               = useState<Agent | null>(null)
   const [convId, setConvId]             = useState<string | null>(null)
   const [messages, setMessages]         = useState<Message[]>([])
   const [input, setInput]               = useState('')
   const [thinking, setThinking]         = useState(false)
+  const [streaming, setStreaming]       = useState('')   // texto a ser construído em tempo real
   const [conversations, setConversations] = useState<any[]>([])
   const wsRef     = useRef<WebSocket | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   // Carregar agente e conversas
   useEffect(() => {
-    api.agents.get(params.agentId).then(setAgent)
-    api.conversations.list(params.agentId).then(setConversations)
-  }, [params.agentId])
+    api.agents.get(agentId).then(setAgent)
+    api.conversations.list(agentId).then(setConversations)
+  }, [agentId])
 
-  // Scroll automático
+  // Scroll automático sempre que há nova mensagem ou conteúdo a crescer
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, thinking])
+  }, [messages, thinking, streaming])
 
   const openConversation = useCallback(async (id: string) => {
     setConvId(id)
+    setStreaming('')
     const msgs = await api.conversations.messages(id)
     setMessages(msgs)
 
@@ -38,8 +42,15 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
     const ws = createChatSocket(id, (msg: WSMessage) => {
       if (msg.type === 'thinking') {
         setThinking(true)
-      } else if (msg.type === 'done') {
+        setStreaming('')
+      } else if (msg.type === 'chunk') {
+        // Primeiro chunk: esconder os dots e começar a construir o texto
         setThinking(false)
+        setStreaming(prev => prev + msg.content)
+      } else if (msg.type === 'done') {
+        // Resposta completa — adicionar à lista de mensagens e limpar o estado de streaming
+        setThinking(false)
+        setStreaming('')
         setMessages(prev => [...prev, {
           id: crypto.randomUUID(),
           role: 'assistant',
@@ -48,6 +59,7 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
         }])
       } else if (msg.type === 'error') {
         setThinking(false)
+        setStreaming('')
         setMessages(prev => [...prev, {
           id: crypto.randomUUID(),
           role: 'assistant',
@@ -60,13 +72,13 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
   }, [])
 
   const newConversation = async () => {
-    const conv = await api.conversations.create(params.agentId)
+    const conv = await api.conversations.create(agentId)
     setConversations(prev => [conv, ...prev])
     openConversation(conv.id)
   }
 
   const sendMessage = () => {
-    if (!input.trim() || !convId || !wsRef.current || thinking) return
+    if (!input.trim() || !convId || !wsRef.current || thinking || streaming) return
 
     const text = input.trim()
     setInput('')
@@ -81,6 +93,8 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
 
     wsRef.current.send(JSON.stringify({ message: text }))
   }
+
+  const isResponding = thinking || streaming.length > 0
 
   return (
     <div className="flex h-screen">
@@ -154,7 +168,7 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
             </div>
           ))}
 
-          {/* Indicador "a pensar" */}
+          {/* Indicador "a pensar" — só enquanto não há chunks */}
           {thinking && (
             <div className="flex justify-start fade-up">
               <div className="bg-panel border border-border rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5">
@@ -164,6 +178,19 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
               </div>
             </div>
           )}
+
+          {/* Mensagem a ser construída em streaming */}
+          {streaming && (
+            <div className="flex justify-start fade-up">
+              <div className="max-w-[75%] bg-panel border border-border rounded-2xl rounded-bl-sm px-4 py-2.5 text-sm leading-relaxed text-white">
+                <p className="whitespace-pre-wrap">
+                  {streaming}
+                  <span className="inline-block w-0.5 h-4 bg-accent ml-0.5 align-middle animate-pulse" />
+                </p>
+              </div>
+            </div>
+          )}
+
           <div ref={bottomRef} />
         </div>
 
@@ -177,13 +204,13 @@ export default function ChatPage({ params }: { params: { agentId: string } }) {
                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
               }}
               placeholder={convId ? `Mensagem para ${agent?.name ?? 'agente'}…` : 'Abre uma conversa para começar'}
-              disabled={!convId || thinking}
+              disabled={!convId || isResponding}
               rows={1}
               className="flex-1 bg-transparent resize-none text-sm outline-none placeholder-muted max-h-36 disabled:opacity-40"
             />
             <button
               onClick={sendMessage}
-              disabled={!input.trim() || !convId || thinking}
+              disabled={!input.trim() || !convId || isResponding}
               className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center hover:bg-accent-dim transition-colors disabled:opacity-30 disabled:cursor-not-allowed shrink-0"
             >
               <Send size={14} />

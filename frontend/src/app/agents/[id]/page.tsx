@@ -1,9 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
+import Link from 'next/link'
 import { api, type Agent } from '@/lib/api'
-import { Trash2 } from 'lucide-react'
+import { Trash2, MessageSquare, Wrench, Webhook } from 'lucide-react'
 
 const MODELS = {
   anthropic: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
@@ -13,14 +14,15 @@ const MODELS = {
 
 const AVATARS = ['🤖', '🧠', '💡', '🔍', '⚙️', '🛠️', '📊', '✍️', '🐍', '🚀']
 
-export default function EditAgentPage({ params }: { params: { id: string } }) {
+export default function EditAgentPage() {
+  const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [saving, setSaving]   = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState<Partial<Agent>>({})
 
   useEffect(() => {
-    api.agents.get(params.id).then(a => setForm({
+    api.agents.get(id).then(a => setForm({
       name:          a.name,
       description:   a.description,
       avatar:        a.avatar,
@@ -29,14 +31,14 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
       llm_model:     a.llm_model,
       temperature:   a.temperature,
     }))
-  }, [params.id])
+  }, [id])
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
   const save = async () => {
     setSaving(true)
     try {
-      await api.agents.update(params.id, form)
+      await api.agents.update(id, form)
       router.push('/agents')
     } catch { alert('Erro ao guardar'); setSaving(false) }
   }
@@ -44,7 +46,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
   const remove = async () => {
     if (!confirm('Arquivar este agente?')) return
     setDeleting(true)
-    await api.agents.delete(params.id)
+    await api.agents.delete(id)
     router.push('/agents')
   }
 
@@ -54,7 +56,7 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Editar Agente</h1>
           <p className="text-muted text-sm mt-1">{form.name}</p>
@@ -66,6 +68,22 @@ export default function EditAgentPage({ params }: { params: { id: string } }) {
         >
           <Trash2 size={14} /> Arquivar
         </button>
+      </div>
+
+      {/* Navigation tabs */}
+      <div className="flex gap-2 mb-8">
+        <Link href={`/chat/${id}`}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-panel border border-border hover:border-accent/50 transition-colors text-sm text-muted hover:text-white">
+          <MessageSquare size={14} /> Chat
+        </Link>
+        <Link href={`/agents/${id}/skills`}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-panel border border-border hover:border-accent/50 transition-colors text-sm text-muted hover:text-white">
+          <Wrench size={14} /> Skills
+        </Link>
+        <Link href={`/agents/${id}/hooks`}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-panel border border-border hover:border-accent/50 transition-colors text-sm text-muted hover:text-white">
+          <Webhook size={14} /> Hooks
+        </Link>
       </div>
 
       <div className="space-y-6">

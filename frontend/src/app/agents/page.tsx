@@ -1,16 +1,16 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Plus, MessageSquare, Puzzle, Webhook } from 'lucide-react'
+import { api, type Agent } from '@/lib/api'
 
-async function getAgents() {
-  try {
-    const res = await fetch('http://backend:8000/api/agents/', { cache: 'no-store' })
-    if (!res.ok) return []
-    return res.json()
-  } catch { return [] }
-}
+export default function AgentsPage() {
+  const [agents, setAgents] = useState<Agent[]>([])
 
-export default async function AgentsPage() {
-  const agents = await getAgents()
+  useEffect(() => {
+    api.agents.list().then(setAgents).catch(() => setAgents([]))
+  }, [])
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
@@ -28,7 +28,7 @@ export default async function AgentsPage() {
       </div>
 
       <div className="space-y-3">
-        {agents.map((agent: any) => (
+        {agents.map((agent) => (
           <div
             key={agent.id}
             className="bg-panel border border-border rounded-xl p-5 flex items-center gap-5 hover:border-border/80 transition-colors"

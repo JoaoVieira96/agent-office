@@ -1,0 +1,14 @@
+{
+  "slug": "anthropic_code_execution",
+  "name": "Execução de Código (Anthropic)",
+  "description": "Execução de código nativa da Anthropic. Corre Python num sandbox seguro na infraestrutura deles — sem configuração local necessária.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {}
+  },
+  "tool_schema": {
+    "type": "code_execution_20250522",
+    "name": "code_execution"
+  }
+}

@@ -161,7 +161,7 @@ class Message(Base):
     conversation_id = Column(UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False)
     role            = Column(SAEnum(MessageRole), nullable=False)
     content         = Column(Text, nullable=False)
-    metadata        = Column(JSON, default=dict)    # skills usadas, tokens, duração...
+    message_metadata = Column(JSON, default=dict)    # skills usadas, tokens, duração...
     created_at      = Column(DateTime, default=datetime.utcnow)
 
     conversation = relationship("Conversation", back_populates="messages")

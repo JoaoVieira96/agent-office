@@ -1,0 +1,35 @@
+{
+  "slug": "file_access",
+  "name": "Acesso a Ficheiros",
+  "description": "Permite ao agente listar e ler ficheiros no servidor dentro de um diretório configurado.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "base_dir": {
+        "type": "string",
+        "default": "/data",
+        "description": "Diretório base ao qual o agente tem acesso (caminho absoluto no servidor)"
+      }
+    }
+  },
+  "tool_schema": {
+    "name": "file_access",
+    "description": "Lista ou lê ficheiros no servidor. Usa 'list' para ver o conteúdo de uma pasta e 'read' para ler um ficheiro.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": ["list", "read"],
+          "description": "'list' para listar ficheiros numa pasta, 'read' para ler o conteúdo de um ficheiro"
+        },
+        "path": {
+          "type": "string",
+          "description": "Caminho relativo ao diretório base. Usa '.' ou '' para a raiz."
+        }
+      },
+      "required": ["action", "path"]
+    }
+  }
+}

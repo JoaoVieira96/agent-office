@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.db.session import create_tables
-from app.api import agents, conversations, skills, hooks
+from app.api import agents, conversations, skills, hooks, ws
 from app.auth import router as auth_router
 from app.auth.deps import get_current_user
 from app.skills.loader import load_skills_from_disk
@@ -46,8 +46,11 @@ app.include_router(agents.router,        prefix="/api/agents",       tags=["agen
 app.include_router(skills.router,        prefix="/api/skills",        tags=["skills"],        dependencies=_auth)
 app.include_router(hooks.router,         prefix="/api/hooks",         tags=["hooks"],         dependencies=_auth)
 
-# Conversas: auth tratada por endpoint — REST usa Bearer, WebSocket usa ?token= (ver conversations.py)
+# Conversas REST
 app.include_router(conversations.router, prefix="/api/conversations", tags=["conversations"])
+
+# WebSocket sem prefixo — acessível em /ws/{id} (nginx faz upgrade neste path)
+app.include_router(ws.router, tags=["websocket"])
 
 
 @app.get("/api/health")

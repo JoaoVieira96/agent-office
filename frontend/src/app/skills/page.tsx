@@ -1,13 +1,14 @@
-async function getSkills() {
-  try {
-    const res = await fetch('http://backend:8000/api/skills/', { cache: 'no-store' })
-    if (!res.ok) return []
-    return res.json()
-  } catch { return [] }
-}
+'use client'
 
-export default async function SkillsPage() {
-  const skills = await getSkills()
+import { useEffect, useState } from 'react'
+import { api, type Skill } from '@/lib/api'
+
+export default function SkillsPage() {
+  const [skills, setSkills] = useState<Skill[]>([])
+
+  useEffect(() => {
+    api.skills.list().then(setSkills).catch(() => setSkills([]))
+  }, [])
 
   return (
     <div className="p-8 max-w-3xl mx-auto">
@@ -17,7 +18,7 @@ export default async function SkillsPage() {
       </p>
 
       <div className="grid gap-3">
-        {skills.map((skill: any) => (
+        {skills.map((skill) => (
           <div key={skill.id} className="bg-panel border border-border rounded-xl p-5">
             <div className="flex items-start justify-between mb-2">
               <div>

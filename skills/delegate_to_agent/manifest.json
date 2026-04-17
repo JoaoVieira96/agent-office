@@ -1,0 +1,28 @@
+{
+  "slug": "delegate_to_agent",
+  "name": "Delegar Tarefa a Agente",
+  "description": "Permite a um agente delegar uma tarefa a outro agente especializado.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {}
+  },
+  "tool_schema": {
+    "name": "delegate_to_agent",
+    "description": "Delega uma tarefa específica a outro agente. Usa esta skill quando precisares de capacidades especializadas de outro agente da equipa. O agente executa a tarefa de forma autónoma e devolve o resultado.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "agent_name": {
+          "type": "string",
+          "description": "Nome exacto do agente a quem delegar a tarefa (ex: 'Pesquisador', 'Programador')"
+        },
+        "task": {
+          "type": "string",
+          "description": "Descrição detalhada da tarefa a executar. Sê específico — o agente só tem este contexto para trabalhar."
+        }
+      },
+      "required": ["agent_name", "task"]
+    }
+  }
+}

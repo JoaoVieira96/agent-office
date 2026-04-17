@@ -1,16 +1,16 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BotMessageSquare, Plus } from 'lucide-react'
+import { BotMessageSquare, Plus, Pencil, Wrench, Webhook } from 'lucide-react'
+import { api, type Agent } from '@/lib/api'
 
-async function getAgents() {
-  try {
-    const res = await fetch('http://backend:8000/api/agents/', { cache: 'no-store' })
-    if (!res.ok) return []
-    return res.json()
-  } catch { return [] }
-}
+export default function Home() {
+  const [agents, setAgents] = useState<Agent[]>([])
 
-export default async function Home() {
-  const agents = await getAgents()
+  useEffect(() => {
+    api.agents.list().then(setAgents).catch(() => setAgents([]))
+  }, [])
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
@@ -34,7 +34,7 @@ export default async function Home() {
         <EmptyState />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {agents.map((agent: any) => (
+          {agents.map((agent) => (
             <AgentCard key={agent.id} agent={agent} />
           ))}
         </div>
@@ -43,7 +43,7 @@ export default async function Home() {
   )
 }
 
-function AgentCard({ agent }: { agent: any }) {
+function AgentCard({ agent }: { agent: Agent }) {
   return (
     <div className="bg-panel border border-border rounded-xl p-5 hover:border-accent/40 transition-colors group">
       <div className="flex items-start justify-between mb-3">
@@ -54,12 +54,21 @@ function AgentCard({ agent }: { agent: any }) {
       </div>
       <h2 className="font-medium text-sm mb-1">{agent.name}</h2>
       <p className="text-muted text-xs line-clamp-2 mb-4">{agent.description || 'Sem descrição'}</p>
-      <Link
-        href={`/chat/${agent.id}`}
-        className="text-xs text-accent hover:text-white transition-colors"
-      >
-        Abrir chat →
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link href={`/chat/${agent.id}`} className="text-xs text-accent hover:text-white transition-colors">
+          Abrir chat →
+        </Link>
+        <span className="text-border">|</span>
+        <Link href={`/agents/${agent.id}`} className="text-muted hover:text-white transition-colors" title="Editar">
+          <Pencil size={13} />
+        </Link>
+        <Link href={`/agents/${agent.id}/skills`} className="text-muted hover:text-white transition-colors" title="Skills">
+          <Wrench size={13} />
+        </Link>
+        <Link href={`/agents/${agent.id}/hooks`} className="text-muted hover:text-white transition-colors" title="Hooks">
+          <Webhook size={13} />
+        </Link>
+      </div>
     </div>
   )
 }

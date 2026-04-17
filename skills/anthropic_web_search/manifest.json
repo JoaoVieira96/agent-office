@@ -1,0 +1,14 @@
+{
+  "slug": "anthropic_web_search",
+  "name": "Pesquisa Web (Anthropic)",
+  "description": "Pesquisa web nativa da Anthropic. Executada na infraestrutura deles — sem API key externa, resultados actualizados em tempo real.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {}
+  },
+  "tool_schema": {
+    "type": "web_search_20260209",
+    "name": "web_search"
+  }
+}

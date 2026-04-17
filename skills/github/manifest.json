@@ -1,0 +1,103 @@
+{
+  "slug": "github",
+  "name": "GitHub",
+  "description": "Integração completa com GitHub: repositórios, ficheiros, issues, pull requests, branches e commits.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "token": {
+        "type": "string",
+        "default": "",
+        "description": "Personal Access Token do GitHub (necessário para escrita e repos privados)"
+      },
+      "default_owner": {
+        "type": "string",
+        "default": "",
+        "description": "Owner/organização padrão quando não especificado (ex: 'octocat' ou 'minha-org')"
+      }
+    }
+  },
+  "tool_schema": {
+    "name": "github",
+    "description": "Interage com o GitHub. Suporta: listar/ver repositórios, ler ficheiros e código, gerir issues (listar/criar/comentar/fechar), gerir pull requests (listar/criar/merge), listar branches e commits.",
+    "input_schema": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "enum": [
+            "list_repos",
+            "get_repo",
+            "list_files",
+            "read_file",
+            "search_code",
+            "list_commits",
+            "list_branches",
+            "create_branch",
+            "list_issues",
+            "get_issue",
+            "create_issue",
+            "comment_issue",
+            "close_issue",
+            "list_prs",
+            "get_pr",
+            "create_pr",
+            "merge_pr"
+          ],
+          "description": "Operação a executar"
+        },
+        "owner": {
+          "type": "string",
+          "description": "Dono do repositório (user ou organização). Usa o default_owner da config se omitido."
+        },
+        "repo": {
+          "type": "string",
+          "description": "Nome do repositório (necessário para operações num repo específico)"
+        },
+        "path": {
+          "type": "string",
+          "description": "Caminho do ficheiro ou pasta no repositório (para list_files e read_file)"
+        },
+        "branch": {
+          "type": "string",
+          "description": "Nome do branch (para list_files, read_file, list_commits, create_branch)"
+        },
+        "base_branch": {
+          "type": "string",
+          "description": "Branch base para criar um novo branch ou pull request"
+        },
+        "query": {
+          "type": "string",
+          "description": "Query de pesquisa (para search_code)"
+        },
+        "number": {
+          "type": "integer",
+          "description": "Número da issue ou pull request"
+        },
+        "title": {
+          "type": "string",
+          "description": "Título da issue ou pull request"
+        },
+        "body": {
+          "type": "string",
+          "description": "Corpo/descrição da issue, pull request ou comentário"
+        },
+        "head": {
+          "type": "string",
+          "description": "Branch de origem para criar um pull request"
+        },
+        "state": {
+          "type": "string",
+          "enum": ["open", "closed", "all"],
+          "description": "Estado para filtrar issues ou PRs (padrão: open)"
+        },
+        "per_page": {
+          "type": "integer",
+          "description": "Número de resultados por página (máx 100, padrão 30)"
+        }
+      },
+      "required": ["action"]
+    }
+  }
+}

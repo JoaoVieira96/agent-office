@@ -2,10 +2,13 @@
 Cliente Anthropic — chama a API do Claude.
 """
 
+from typing import Callable, Awaitable
 import anthropic
+from anthropic.types import Message as AnthropicMessage
 from app.config import settings
 
 _client = None
+
 
 def get_client() -> anthropic.AsyncAnthropic:
     global _client
@@ -14,20 +17,14 @@ def get_client() -> anthropic.AsyncAnthropic:
     return _client
 
 
-async def call_anthropic(
+def _build_kwargs(
     system_prompt: str,
     messages: list[dict],
-    tools: list[dict] | None = None,
-    model: str = "claude-opus-4-6",
-    temperature: float = 0.7,
-    max_tokens: int = 4096,
-) -> str:
-    """
-    Chama o Claude e devolve o texto da resposta.
-    Se tools estiver preenchido, o agente pode usar skills.
-    """
-    client = get_client()
-
+    tools: list[dict] | None,
+    model: str,
+    temperature: float,
+    max_tokens: int,
+) -> dict:
     kwargs = dict(
         model=model,
         max_tokens=max_tokens,
@@ -35,16 +32,45 @@ async def call_anthropic(
         messages=messages,
         temperature=temperature,
     )
-
     if tools:
         kwargs["tools"] = tools
+    return kwargs
 
-    response = await client.messages.create(**kwargs)
 
-    # Extrai texto da resposta (pode vir misturado com tool_use blocks)
-    text_parts = [
-        block.text
-        for block in response.content
-        if block.type == "text"
-    ]
-    return "\n".join(text_parts)
+async def stream_anthropic(
+    system_prompt: str,
+    messages: list[dict],
+    on_chunk: Callable[[str], Awaitable[None]],
+    tools: list[dict] | None = None,
+    model: str = "claude-opus-4-6",
+    temperature: float = 0.7,
+    max_tokens: int = 4096,
+) -> AnthropicMessage:
+    """
+    Faz streaming da resposta do Claude.
+    Chama on_chunk(text) para cada fragmento de texto recebido.
+    Devolve o AnthropicMessage final (pode conter tool_use blocks).
+    """
+    client = get_client()
+    kwargs = _build_kwargs(system_prompt, messages, tools, model, temperature, max_tokens)
+
+    async with client.messages.stream(**kwargs) as stream:
+        async for text in stream.text_stream:
+            await on_chunk(text)
+        return await stream.get_final_message()
+
+
+def _serialize_content(content_blocks) -> list[dict]:
+    """Converte os blocos de conteúdo do SDK para dicts compatíveis com a API."""
+    result = []
+    for block in content_blocks:
+        if block.type == "text":
+            result.append({"type": "text", "text": block.text})
+        elif block.type == "tool_use":
+            result.append({
+                "type": "tool_use",
+                "id": block.id,
+                "name": block.name,
+                "input": block.input,
+            })
+    return result
