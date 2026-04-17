@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.db.session import SessionLocal
-from app.db.models import Skill
+from app.db.models import Skill, AgentSkill
 
 
 async def load_skills_from_disk():
@@ -25,34 +25,41 @@ async def load_skills_from_disk():
 
     db: Session = SessionLocal()
     try:
+        # Slugs presentes em disco
+        active_slugs: set[str] = set()
         for folder in skills_path.iterdir():
             if not folder.is_dir() or folder.name.startswith("_"):
                 continue
-
             manifest_file = folder / "manifest.json"
             if not manifest_file.exists():
                 continue
 
             manifest = json.loads(manifest_file.read_text())
             slug = manifest.get("slug", folder.name)
+            active_slugs.add(slug)
 
             existing = db.query(Skill).filter(Skill.slug == slug).first()
             if existing:
-                # Actualiza versão/descrição se mudou
                 existing.name          = manifest.get("name", slug)
                 existing.description   = manifest.get("description", "")
                 existing.version       = manifest.get("version", "1.0.0")
                 existing.config_schema = manifest.get("config_schema", {})
             else:
-                skill = Skill(
+                db.add(Skill(
                     slug          = slug,
                     name          = manifest.get("name", slug),
                     description   = manifest.get("description", ""),
                     version       = manifest.get("version", "1.0.0"),
                     config_schema = manifest.get("config_schema", {}),
-                )
-                db.add(skill)
+                ))
                 print(f"[skills] Registada skill: {slug}")
+
+        # Remover da DB skills que já não existem em disco
+        for skill in db.query(Skill).all():
+            if skill.slug not in active_slugs:
+                db.query(AgentSkill).filter(AgentSkill.skill_id == skill.id).delete()
+                db.delete(skill)
+                print(f"[skills] Removida skill: {skill.slug}")
 
         db.commit()
     finally:
