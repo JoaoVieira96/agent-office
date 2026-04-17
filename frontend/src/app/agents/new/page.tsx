@@ -169,8 +169,8 @@ const TEMPLATES: {
 ## Workflow
 1. Use \`jcodemunch\` to read the relevant parts of the codebase
 2. Implement the changes
-3. Use \`git_push\` to write files, commit, and push to a new branch
-4. Use \`github\` to create a PR from that branch to main
+3. Use \`github: write_file\` for each changed file (commits directly via API)
+4. Use \`github: create_pr\` to open a PR from that branch to main
 5. Reply with: summary of changes + PR link
 
 ## Final reply format
@@ -214,8 +214,8 @@ Files changed: <list>
 ## Workflow
 1. Use \`jcodemunch\` to read the relevant parts of the codebase
 2. Implement the changes (models → business logic → API layer)
-3. Use \`git_push\` to write files, commit, and push to a new branch
-4. Use \`github\` to create a PR from that branch to main
+3. Use \`github: write_file\` for each changed file (commits directly via API)
+4. Use \`github: create_pr\` to open a PR from that branch to main
 5. Reply with: summary of changes + PR link
 
 ## Final reply format

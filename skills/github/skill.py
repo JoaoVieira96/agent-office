@@ -57,6 +57,8 @@ async def _dispatch(action: str, p: dict, owner: str, repo: str, client: httpx.A
             return await _list_files(_require(owner, "owner"), _require(repo, "repo"), p, client)
         case "read_file":
             return await _read_file(_require(owner, "owner"), _require(repo, "repo"), p, client)
+        case "write_file":
+            return await _write_file(_require(owner, "owner"), _require(repo, "repo"), p, client)
         case "search_code":
             return await _search_code(p, owner, repo, client)
         case "list_commits":
@@ -155,6 +157,49 @@ async def _list_files(owner: str, repo: str, p: dict, client: httpx.AsyncClient)
         size = f"  ({_human_size(item['size'])})" if item["type"] == "file" else ""
         lines.append(f"  {icon} {item['name']}{size}")
     return "\n".join(lines)
+
+
+async def _write_file(owner: str, repo: str, p: dict, client: httpx.AsyncClient) -> str:
+    path    = p.get("path", "").strip().lstrip("/")
+    content = p.get("content", "")
+    message = p.get("commit_message", "").strip() or "chore: update file via agent"
+    branch  = p.get("branch", "").strip()
+
+    if not path:
+        return "[erro] Parâmetro 'path' é obrigatório para write_file."
+    if content is None:
+        return "[erro] Parâmetro 'content' é obrigatório para write_file."
+
+    url    = f"{API}/repos/{owner}/{repo}/contents/{path}"
+    params = {"ref": branch} if branch else {}
+
+    # Obter SHA do ficheiro existente (necessário para update)
+    sha = None
+    r = await client.get(url, params=params)
+    if r.status_code == 200:
+        sha = r.json().get("sha")
+    elif r.status_code != 404:
+        r.raise_for_status()
+
+    import base64 as _b64
+    encoded = _b64.b64encode(content.encode("utf-8")).decode("ascii")
+
+    body: dict = {"message": message, "content": encoded}
+    if branch:
+        body["branch"] = branch
+    if sha:
+        body["sha"] = sha
+
+    cr = await client.put(url, json=body)
+    cr.raise_for_status()
+    data   = cr.json()
+    action = "actualizado" if sha else "criado"
+    commit = data.get("commit", {})
+    return (
+        f"Ficheiro {action}: {owner}/{repo}/{path}\n"
+        f"Commit: {commit.get('sha','?')[:7]} — {commit.get('message','').splitlines()[0]}\n"
+        f"URL: {data.get('content',{}).get('html_url','')}"
+    )
 
 
 async def _read_file(owner: str, repo: str, p: dict, client: httpx.AsyncClient) -> str:

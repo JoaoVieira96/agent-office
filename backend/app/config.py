@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str    = ""
 
+    # Integrações globais
+    GITHUB_TOKEN: str         = ""
+    GITHUB_DEFAULT_OWNER: str = ""
+
     # Segurança
     SECRET_KEY: str = "dev-secret-muda-em-producao"
     ADMIN_USERNAME: str = "admin"

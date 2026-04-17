@@ -15,6 +15,21 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.db.models import AgentSkill, Skill
 
+# Configuração global injectada em skills que a necessitam.
+# O agent config tem prioridade — estes são apenas fallbacks.
+_GLOBAL_CONFIG: dict[str, dict] = {
+    "github": {
+        "token":         lambda: settings.GITHUB_TOKEN,
+        "default_owner": lambda: settings.GITHUB_DEFAULT_OWNER,
+    },
+}
+
+
+def _build_config(slug: str, agent_config: dict) -> dict:
+    """Merge global config (fallback) com config específica do agente (prioridade)."""
+    global_defaults = {k: v() for k, v in _GLOBAL_CONFIG.get(slug, {}).items()}
+    return {**global_defaults, **agent_config}
+
 
 async def get_tools_for_agent(agent_id: UUID, db: Session) -> list[dict]:
     """
@@ -101,4 +116,4 @@ async def execute_skill(slug: str, params: dict, config: dict) -> str:
     if not hasattr(module, "run"):
         return f"[erro] Skill '{slug}' nao tem funcao run()."
 
-    return await module.run(params=params, config=config)
+    return await module.run(params=params, config=_build_config(slug, config))

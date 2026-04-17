@@ -6,21 +6,16 @@
   "config_schema": {
     "type": "object",
     "properties": {
-      "token": {
-        "type": "string",
-        "default": "",
-        "description": "Personal Access Token do GitHub (necessário para escrita e repos privados)"
-      },
       "default_owner": {
         "type": "string",
         "default": "",
-        "description": "Owner/organização padrão quando não especificado (ex: 'octocat' ou 'minha-org')"
+        "description": "Owner/organização padrão quando não especificado. Deixar vazio para usar GITHUB_DEFAULT_OWNER do .env"
       }
     }
   },
   "tool_schema": {
     "name": "github",
-    "description": "Interage com o GitHub. Suporta: listar/ver repositórios, ler ficheiros e código, gerir issues (listar/criar/comentar/fechar), gerir pull requests (listar/criar/merge), listar branches e commits.",
+    "description": "Interage com o GitHub. Suporta: listar/ver repositórios, ler e escrever ficheiros (com commit directo via API), gerir issues (listar/criar/comentar/fechar), gerir pull requests (listar/criar/merge), listar branches e commits.",
     "input_schema": {
       "type": "object",
       "properties": {
@@ -31,6 +26,7 @@
             "get_repo",
             "list_files",
             "read_file",
+            "write_file",
             "search_code",
             "list_commits",
             "list_branches",
@@ -57,7 +53,15 @@
         },
         "path": {
           "type": "string",
-          "description": "Caminho do ficheiro ou pasta no repositório (para list_files e read_file)"
+          "description": "Caminho do ficheiro ou pasta no repositório (para list_files, read_file e write_file)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Conteúdo completo do ficheiro em texto (para write_file)"
+        },
+        "commit_message": {
+          "type": "string",
+          "description": "Mensagem de commit (para write_file)"
         },
         "branch": {
           "type": "string",
