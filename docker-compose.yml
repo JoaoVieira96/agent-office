@@ -34,6 +34,7 @@ services:
       - ./skills:/app/skills:ro
       - agent_logs:/app/logs
       - ./data:/data
+      - ./:/app/repo:ro
     depends_on:
       postgres:
         condition: service_healthy

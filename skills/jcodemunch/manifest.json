@@ -1,0 +1,23 @@
+{
+  "slug": "jcodemunch",
+  "name": "jCodeMunch - Análise de Código",
+  "description": "Indexa e analisa código-fonte com precisão token-eficiente. Recupera símbolos, funções e classes diretamente sem descarregar ficheiros inteiros.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "repo_path": {
+        "type": "string",
+        "default": "/app/repo",
+        "description": "Caminho para o repositório a indexar dentro do container (ex: /app/repo)"
+      }
+    }
+  },
+  "mcp_server": {
+    "command": "jcodemunch-mcp",
+    "args": [],
+    "env_from_config": {
+      "REPO_PATH": "repo_path"
+    }
+  }
+}

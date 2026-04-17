@@ -1,0 +1,23 @@
+{
+  "slug": "minha_mcp",
+  "name": "Nome da Skill MCP",
+  "description": "O que este servidor MCP faz, numa frase.",
+  "version": "1.0.0",
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "param_configuravel": {
+        "type": "string",
+        "default": "valor_padrao",
+        "description": "Parâmetro passado ao servidor MCP como variável de ambiente"
+      }
+    }
+  },
+  "mcp_server": {
+    "command": "nome-do-binario-mcp",
+    "args": [],
+    "env_from_config": {
+      "NOME_ENV_VAR": "param_configuravel"
+    }
+  }
+}

@@ -2,15 +2,14 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { BotMessageSquare, Users, Puzzle, Webhook, Settings, LogOut } from 'lucide-react'
+import { BotMessageSquare, Puzzle, Webhook, Settings, LogOut } from 'lucide-react'
 import clsx from 'clsx'
 import { clearToken } from '@/lib/auth'
 
 const nav = [
-  { href: '/',        icon: BotMessageSquare, label: 'Escritório' },
-  { href: '/agents',  icon: Users,            label: 'Agentes'    },
-  { href: '/skills',  icon: Puzzle,           label: 'Skills'     },
-  { href: '/hooks',   icon: Webhook,          label: 'Hooks'      },
+  { href: '/',       icon: BotMessageSquare, label: 'Escritório' },
+  { href: '/skills', icon: Puzzle,           label: 'Skills'     },
+  { href: '/hooks',  icon: Webhook,          label: 'Hooks'      },
 ]
 
 export function Sidebar() {

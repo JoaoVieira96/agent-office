@@ -1,6 +1,9 @@
 """
 Skills Registry — devolve as tools activas para um agente,
 no formato esperado pela API do Claude (tools=[...]).
+
+Skills com 'mcp_server' no manifest sao tratadas como servidores MCP:
+as suas tools sao descobertas em runtime pelo MCPContext.
 """
 
 import json
@@ -15,8 +18,8 @@ from app.db.models import AgentSkill, Skill
 
 async def get_tools_for_agent(agent_id: UUID, db: Session) -> list[dict]:
     """
-    Devolve a lista de tool definitions no formato Anthropic
-    para todas as skills activas do agente.
+    Devolve tool definitions (formato Anthropic) para skills regulares activas.
+    Skills MCP sao excluidas aqui — as suas tools sao geridas pelo MCPContext.
     """
     agent_skills = (
         db.query(AgentSkill)
@@ -31,43 +34,71 @@ async def get_tools_for_agent(agent_id: UUID, db: Session) -> list[dict]:
 
     tools = []
     for agent_skill in agent_skills:
-        tool_def = _load_tool_definition(agent_skill.skill.slug)
+        manifest = _load_manifest(agent_skill.skill.slug)
+        if manifest is None:
+            continue
+        if "mcp_server" in manifest:
+            continue  # skills MCP sao tratadas pelo MCPContext
+        tool_def = manifest.get("tool_schema")
         if tool_def:
             tools.append(tool_def)
 
     return tools
 
 
-def _load_tool_definition(slug: str) -> dict | None:
+async def get_mcp_configs_for_agent(agent_id: UUID, db: Session) -> list[dict]:
     """
-    Lê o manifest.json da skill e constrói a tool definition.
+    Devolve configuracoes das skills MCP activas para este agente.
+    Cada entry tem: slug, mcp_server (config do servidor), config (config do agente).
     """
-    skill_path = Path(settings.SKILLS_DIR) / slug / "manifest.json"
-    if not skill_path.exists():
-        return None
+    agent_skills = (
+        db.query(AgentSkill)
+        .join(Skill)
+        .filter(
+            AgentSkill.agent_id == agent_id,
+            AgentSkill.is_active == True,
+            Skill.is_enabled == True,
+        )
+        .all()
+    )
 
-    manifest = json.loads(skill_path.read_text())
-    tool_schema = manifest.get("tool_schema")
-    if not tool_schema:
-        return None
+    mcp_skills = []
+    for agent_skill in agent_skills:
+        manifest = _load_manifest(agent_skill.skill.slug)
+        if manifest is None:
+            continue
+        if "mcp_server" not in manifest:
+            continue
+        mcp_skills.append({
+            "slug":       agent_skill.skill.slug,
+            "mcp_server": manifest["mcp_server"],
+            "config":     agent_skill.config or {},
+        })
 
-    return tool_schema
+    return mcp_skills
+
+
+def _load_manifest(slug: str) -> dict | None:
+    manifest_path = Path(settings.SKILLS_DIR) / slug / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    return json.loads(manifest_path.read_text())
 
 
 async def execute_skill(slug: str, params: dict, config: dict) -> str:
     """
-    Executa a skill pelo slug, passando params (do LLM) e config (do agente).
-    Devolve o resultado como string.
+    Executa uma skill regular pelo slug.
+    Nao deve ser chamada para skills MCP (tratadas pelo MCPContext).
     """
     skill_file = Path(settings.SKILLS_DIR) / slug / "skill.py"
     if not skill_file.exists():
-        return f"[erro] Skill '{slug}' não encontrada em disco."
+        return f"[erro] Skill '{slug}' nao tem skill.py."
 
     spec = importlib.util.spec_from_file_location(f"skill_{slug}", skill_file)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
     if not hasattr(module, "run"):
-        return f"[erro] Skill '{slug}' não tem função run()."
+        return f"[erro] Skill '{slug}' nao tem funcao run()."
 
     return await module.run(params=params, config=config)

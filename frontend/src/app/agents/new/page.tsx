@@ -1,43 +1,168 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, type Skill } from '@/lib/api'
-import { Check } from 'lucide-react'
+import { Check, Sparkles, ArrowRight } from 'lucide-react'
 
-const MODELS = {
-  anthropic: ['claude-opus-4-6', 'claude-sonnet-4-6', 'claude-haiku-4-5-20251001'],
-  openai:    ['gpt-4o', 'gpt-4o-mini'],
-  ollama:    ['llama3.2', 'mistral', 'codestral'],
+const MODELS: Record<string, { id: string; label: string }[]> = {
+  anthropic: [
+    { id: 'claude-haiku-4-5-20251001', label: 'claude-haiku-4-5  · $0.80 / $4'   },
+    { id: 'claude-sonnet-4-6',         label: 'claude-sonnet-4-6  · $3 / $15'     },
+    { id: 'claude-opus-4-6',           label: 'claude-opus-4-6  · $15 / $75'      },
+  ],
+  openai: [
+    { id: 'gpt-4o-mini', label: 'gpt-4o-mini  · $0.15 / $0.60' },
+    { id: 'gpt-4o',      label: 'gpt-4o  · $2.50 / $10'         },
+  ],
+  ollama: [
+    { id: 'llama3.2',   label: 'llama3.2  · free (local)'  },
+    { id: 'mistral',    label: 'mistral  · free (local)'    },
+    { id: 'codestral',  label: 'codestral  · free (local)'  },
+  ],
 }
 
 const AVATARS = ['🤖', '🧠', '💡', '🔍', '⚙️', '🛠️', '📊', '✍️', '🐍', '🚀']
 
+type FormState = {
+  name: string
+  description: string
+  avatar: string
+  system_prompt: string
+  llm_provider: 'anthropic' | 'openai' | 'ollama'
+  llm_model: string
+  temperature: number
+}
+
+const BLANK_FORM: FormState = {
+  name:          '',
+  description:   '',
+  avatar:        '🤖',
+  system_prompt: '',
+  llm_provider:  'anthropic',
+  llm_model:     'claude-haiku-4-5-20251001',
+  temperature:   70,
+}
+
+const TEMPLATES: {
+  id: string
+  avatar: string
+  name: string
+  description: string
+  tags: string[]
+  form: Partial<FormState>
+}[] = [
+  {
+    id: 'frontend-developer',
+    avatar: '🎨',
+    name: 'Frontend Developer',
+    description: 'Senior frontend developer specialising in React, TypeScript, and modern web UIs.',
+    tags: ['React', 'TypeScript', 'Next.js', 'Tailwind', 'WCAG'],
+    form: {
+      name:          'Frontend Developer',
+      avatar:        '🎨',
+      description:   'Builds performant, accessible UIs with React 18+, TypeScript, and Tailwind CSS.',
+      llm_provider:  'anthropic',
+      llm_model:     'claude-sonnet-4-6',
+      temperature:   70,
+      system_prompt: `You are a senior frontend developer specialising in modern web applications with deep expertise in React 18+, Vue 3+, and Angular 15+. Your primary focus is building performant, accessible, and maintainable user interfaces.
+
+## Core responsibilities
+- Build responsive, pixel-perfect UIs from design specs or written requirements
+- Write clean TypeScript with strict mode enabled and proper type coverage
+- Ensure WCAG 2.1 AA accessibility compliance in all components
+- Optimise for Core Web Vitals: LCP < 2.5s, CLS < 0.1, FID < 100ms
+- Write co-located unit and integration tests (target > 85% coverage)
+
+## Technical standards
+- TypeScript strict mode with strict null checks enabled
+- ES2022 target; use path aliases for imports
+- Component-driven architecture with clear separation of concerns
+- State management via React Context, Zustand, or Redux Toolkit — match existing patterns
+- Real-time features: WebSockets, Server-Sent Events, optimistic updates
+- CSS: Tailwind CSS utility-first; avoid inline styles
+- Testing: Vitest + Testing Library; Storybook for component documentation
+
+## Workflow
+1. **Context discovery** — understand the existing component library, design tokens, routing, and API contracts before writing any code
+2. **Implementation** — scaffold components with TypeScript interfaces first, then implement logic, then styles, then tests
+3. **Handoff** — provide component API docs, usage examples, and a brief note on architectural decisions
+
+## Communication style
+- Be concise and direct; show code over explanations when possible
+- Flag accessibility issues proactively
+- Ask clarifying questions if requirements are ambiguous before starting implementation
+- Highlight performance trade-offs when relevant`,
+    },
+  },
+  {
+    id: 'backend-developer',
+    avatar: '⚙️',
+    name: 'Backend Developer',
+    description: 'Senior backend engineer focused on scalable APIs, databases, and secure server-side systems.',
+    tags: ['Python', 'FastAPI', 'PostgreSQL', 'REST', 'Docker'],
+    form: {
+      name:          'Backend Developer',
+      avatar:        '⚙️',
+      description:   'Builds scalable, secure APIs and server-side systems with Python, FastAPI, and PostgreSQL.',
+      llm_provider:  'anthropic',
+      llm_model:     'claude-sonnet-4-6',
+      temperature:   60,
+      system_prompt: `You are a senior backend developer specialising in scalable, secure, and performant server-side systems. You have deep expertise in Python, FastAPI, Node.js, and PostgreSQL.
+
+## Core responsibilities
+- Design and implement RESTful APIs following HTTP semantics and OpenAPI documentation standards
+- Architect database schemas with proper indexing, constraints, and migration strategies
+- Implement authentication, authorisation, input validation, and encryption following OWASP guidelines
+- Write services that target sub-100ms P99 response times under production load
+- Write unit and integration tests targeting > 80% coverage
+
+## Technical standards
+- Python: FastAPI + SQLAlchemy + Alembic; type hints everywhere; Pydantic models for validation
+- APIs: RESTful resource naming, proper status codes, versioning via URL prefix (/api/v1/)
+- Databases: PostgreSQL; always use parameterised queries; never raw string interpolation
+- Security: JWT for auth, bcrypt for passwords, rate limiting, CORS configuration, secrets via env vars only
+- Async: prefer async/await throughout; avoid blocking I/O on the event loop
+- Testing: pytest + httpx for API tests; real database in tests, not mocks
+- Containerisation: Dockerfile best practices (non-root user, layer caching, health checks)
+
+## Workflow
+1. **System analysis** — map existing architecture, data models, and integration points before proposing changes
+2. **Service development** — define data models and migrations first, then business logic, then API layer, then tests
+3. **Production readiness** — verify logging, error handling, health checks, and environment variable documentation before marking done
+
+## Communication style
+- Show code and SQL over lengthy explanations
+- Flag security implications proactively (e.g. N+1 queries, missing auth checks, secrets in logs)
+- Propose the simplest solution that meets requirements; avoid over-engineering
+- Ask about existing patterns before introducing new libraries or abstractions`,
+    },
+  },
+]
+
 export default function NewAgentPage() {
   const router = useRouter()
 
-  // Step 1 state
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<0 | 1 | 2>(0)
   const [saving, setSaving] = useState(false)
   const [agentId, setAgentId] = useState<string | null>(null)
-  const [form, setForm] = useState({
-    name:          '',
-    description:   '',
-    avatar:        '🤖',
-    system_prompt: '',
-    llm_provider:  'anthropic' as 'anthropic' | 'openai' | 'ollama',
-    llm_model:     'claude-opus-4-6',
-    temperature:   70,
-  })
+  const [form, setForm] = useState<FormState>(BLANK_FORM)
 
-  // Step 2 state
   const [skills, setSkills] = useState<Skill[]>([])
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [assigning, setAssigning] = useState(false)
 
-  const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const set = (k: keyof FormState, v: any) => setForm(f => ({ ...f, [k]: v }))
 
-  // Step 1 → create agent, move to step 2
+  const pickTemplate = (tpl: typeof TEMPLATES[number] | null) => {
+    if (tpl) {
+      setForm({ ...BLANK_FORM, ...tpl.form } as FormState)
+    } else {
+      setForm(BLANK_FORM)
+    }
+    setStep(1)
+  }
+
   const createAgent = async () => {
     if (!form.name || !form.system_prompt) return
     setSaving(true)
@@ -61,14 +186,11 @@ export default function NewAgentPage() {
       return next
     })
 
-  // Step 2 → assign selected skills, go to chat
   const finish = async () => {
     if (!agentId) return
     setAssigning(true)
     try {
-      await Promise.all(
-        [...selected].map(skillId => api.skills.assign(agentId, skillId))
-      )
+      await Promise.all([...selected].map(skillId => api.skills.assign(agentId, skillId)))
       router.push(`/chat/${agentId}`)
     } catch {
       alert('Erro ao atribuir skills')
@@ -78,19 +200,66 @@ export default function NewAgentPage() {
 
   return (
     <div className="p-8 max-w-2xl mx-auto">
-      {/* Header with step indicator */}
+      {/* Header */}
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-2xl font-semibold tracking-tight">Contratar Agente</h1>
-        <div className="flex items-center gap-2 text-xs text-muted">
-          <StepDot n={1} active={step === 1} done={step > 1} />
-          <span className="w-6 h-px bg-border" />
-          <StepDot n={2} active={step === 2} done={false} />
-        </div>
+        {step > 0 && (
+          <div className="flex items-center gap-2 text-xs text-muted">
+            <StepDot n={1} active={step === 1} done={step > 1} />
+            <span className="w-6 h-px bg-border" />
+            <StepDot n={2} active={step === 2} done={false} />
+          </div>
+        )}
       </div>
       <p className="text-muted text-sm mb-8">
-        {step === 1 ? 'Define a personalidade, modelo e função do novo agente.' : 'Escolhe as skills que este agente pode usar.'}
+        {step === 0 && 'Começa a partir de um template ou cria um agente do zero.'}
+        {step === 1 && 'Define a personalidade, modelo e função do novo agente.'}
+        {step === 2 && 'Escolhe as skills que este agente pode usar.'}
       </p>
 
+      {/* Step 0 — template picker */}
+      {step === 0 && (
+        <div className="space-y-3">
+          {TEMPLATES.map(tpl => (
+            <button
+              key={tpl.id}
+              onClick={() => pickTemplate(tpl)}
+              className="w-full flex items-center gap-4 p-5 rounded-xl border border-border bg-panel hover:border-accent/50 hover:bg-accent/5 transition-colors text-left group"
+            >
+              <div className="text-3xl w-12 h-12 flex items-center justify-center bg-surface rounded-xl border border-border shrink-0">
+                {tpl.avatar}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-medium text-sm mb-1">{tpl.name}</div>
+                <div className="text-xs text-muted mb-2">{tpl.description}</div>
+                <div className="flex flex-wrap gap-1">
+                  {tpl.tags.map(tag => (
+                    <span key={tag} className="text-xs bg-border text-muted px-2 py-0.5 rounded-full">{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <ArrowRight size={16} className="text-muted group-hover:text-accent transition-colors shrink-0" />
+            </button>
+          ))}
+
+          {/* Start from scratch */}
+          <button
+            onClick={() => pickTemplate(null)}
+            className="w-full flex items-center gap-4 p-5 rounded-xl border border-dashed border-border hover:border-accent/50 transition-colors text-left group"
+          >
+            <div className="w-12 h-12 flex items-center justify-center bg-surface rounded-xl border border-border shrink-0">
+              <Sparkles size={20} className="text-muted group-hover:text-accent transition-colors" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-sm mb-1">Começar do zero</div>
+              <div className="text-xs text-muted">Configura o agente manualmente do início.</div>
+            </div>
+            <ArrowRight size={16} className="text-muted group-hover:text-accent transition-colors shrink-0" />
+          </button>
+        </div>
+      )}
+
+      {/* Step 1 — agent config form */}
       {step === 1 && (
         <div className="space-y-6">
           {/* Avatar */}
@@ -133,7 +302,7 @@ export default function NewAgentPage() {
               value={form.system_prompt}
               onChange={e => set('system_prompt', e.target.value)}
               placeholder="És um assistente especializado em programação Python. Respondes sempre em português, de forma concisa e com exemplos de código quando relevante..."
-              rows={6}
+              rows={10}
               className="input-base w-full resize-none"
             />
           </Field>
@@ -143,9 +312,9 @@ export default function NewAgentPage() {
               <select
                 value={form.llm_provider}
                 onChange={e => {
-                  const p = e.target.value as any
+                  const p = e.target.value as keyof typeof MODELS
                   set('llm_provider', p)
-                  set('llm_model', MODELS[p as keyof typeof MODELS][0])
+                  set('llm_model', MODELS[p][0].id)
                 }}
                 className="input-base w-full"
               >
@@ -161,7 +330,7 @@ export default function NewAgentPage() {
                 className="input-base w-full"
               >
                 {MODELS[form.llm_provider].map(m => (
-                  <option key={m} value={m}>{m}</option>
+                  <option key={m.id} value={m.id}>{m.label}</option>
                 ))}
               </select>
             </Field>
@@ -184,15 +353,16 @@ export default function NewAgentPage() {
               {saving ? 'A criar…' : 'Continuar →'}
             </button>
             <button
-              onClick={() => router.back()}
+              onClick={() => setStep(0)}
               className="px-5 py-2 rounded-lg border border-border hover:bg-border transition-colors text-sm text-muted"
             >
-              Cancelar
+              Voltar
             </button>
           </div>
         </div>
       )}
 
+      {/* Step 2 — skills */}
       {step === 2 && (
         <div className="space-y-4">
           {skills.length === 0 ? (
@@ -253,7 +423,12 @@ function StepDot({ n, active, done }: { n: number; active: boolean; done: boolea
   )
 }
 
-function Field({ label, children, required, hint }: any) {
+function Field({ label, children, required, hint }: {
+  label: string
+  children: React.ReactNode
+  required?: boolean
+  hint?: string
+}) {
   return (
     <div>
       <label className="text-xs text-muted block mb-1.5">
